@@ -1,0 +1,29 @@
+function setup() {
+  createCanvas(800, 600);
+  background(240);
+
+  // draw the tree
+  draw_box('grandparent', width / 2, 100);
+	  draw_box('father', width / 2, 100, width / 2 + 150, 250);
+
+	
+
+
+	
+
+
+function draw_box(label, x, y) {
+  rectMode(CENTER);
+  fill(255);
+  stroke(0);
+  rect(x, y, 100, 50);
+  fill(0);
+  noStroke();
+  textAlign(CENTER, CENTER);
+  text(label, x, y);
+}
+
+function connect(x1, y1, x2, y2) {
+  stroke(0);
+  line(x1, y1 + 25, x2, y2 - 25);
+}
