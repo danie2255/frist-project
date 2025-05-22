@@ -1,0 +1,29 @@
+function mousePressed() {
+	if (dist(mouseX, mouseY, slingPoint.x, slingPoint.y) < 80) {
+		isDragging = true;
+		launchPos = {
+			x: mouseX,
+			y: mouseY
+		};
+	}
+}
+
+function mouseDragged() {
+	if (isDragging) {
+		launchPos = {
+			x: mouseX,
+			y: mouseY
+		};
+	}
+}
+
+function mouseReleased() {
+	if (isDragging) {
+		let dx = slingPoint.x - launchPos.x;
+		let dy = slingPoint.y - launchPos.y;
+		let rock = new Rock(slingPoint.x, slingPoint.y, dx * 0.15, dy * 0.15);
+		rocks.push(rock);
+		isDragging = false;
+		launchPos = null;
+	}
+}
