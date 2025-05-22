@@ -1,0 +1,89 @@
+//mater.js 
+const Engine = Matter.Engine;
+const World = Matter.World;
+const Bodies = Matter.Bodies;
+const Body = Matter.Body;
+
+let engine, world;
+
+class Rock {
+	constructor(x, y, vx, vy) {
+		this.r = 25;
+		this.body = Bodies.circle(x, y, this.r, {
+			restitution: 0.5,
+			friction: 0.1,
+			density: 0.004
+		});
+		Body.setVelocity(this.body, {
+			x: vx,
+			y: vy
+		});
+		World.add(world, this.body);
+	}
+
+	show() {
+		let pos = this.body.position;
+		push();
+		translate(pos.x, pos.y);
+		rotate(this.body.angle);
+		imageMode(CENTER);
+		image(rockImg, 0, 0, this.r * 2, this.r * 2);
+		pop();
+	}
+
+	checkPlaneHit(px, py, pw, ph) {
+		let pos = this.body.position;
+		return pos.x > px && pos.x < px + pw &&
+			pos.y > py && pos.y < py + ph;
+	}
+
+	isOffScreen() {
+		let pos = this.body.position;
+		return pos.y > height + 100 || pos.x < -100 || pos.x > width + 100;
+	}
+}
+
+class Bar {
+	constructor(x, y, isGold) {
+		this.isGold = isGold;
+		this.w = 40;
+		this.h = 20;
+		this.body = Bodies.rectangle(x, y, this.w, this.h, {
+			restitution: 0.,
+			friction: 0.1
+		});
+		Body.setVelocity(this.body, {
+			x: random(-2, 2),
+			y: random(-1, 1)
+		});
+		World.add(world, this.body);
+	}
+
+	show() {
+		let pos = this.body.position;
+		push();
+		translate(pos.x, pos.y);
+		rotate(this.body.angle);
+		imageMode(CENTER);
+		image(this.isGold ? goldbar : silbar, 0, 0, this.w, this.h);
+		pop();
+	}
+
+	isOffScreen() {
+		return this.body.position.y > height + 100;
+	}
+}
+
+function setupMatter() {
+	engine = Engine.create();
+	world = engine.world;
+
+	let ground = Bodies.rectangle(width / 2, height + 50, width, 100, {
+		isStatic: true
+	});
+	World.add(world, ground);
+}
+
+function removeRock(rock) {
+	World.remove(world, rock.body);
+}
