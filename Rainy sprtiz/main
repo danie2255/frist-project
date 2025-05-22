@@ -1,0 +1,171 @@
+//main
+let bg, plane, goldbar, silbar;
+let frizzleImg, rockImg;
+let bird1, bird, satellite;
+
+let planeX, planeY = 60;
+let planeHit = false;
+let bars = [];
+let movingObjs = [];
+let rocks = [];
+let fScale = 0.5;
+
+let slingPoint;
+let isDragging = false;
+let launchPos = null;
+
+function preload() {
+	bg = loadImage('bg.jpg');
+	plane = loadImage('airplane.png');
+	frizzleImg = loadImage('slingshot.png');
+	rockImg = loadImage('rock (2).png');
+	bird1 = loadImage('bird.png');
+	bird = loadImage('bird2.png');
+	satellite = loadImage('satellite.png');
+	goldbar = loadImage('goldbar.png');
+	silbar = loadImage('silverbar.png');
+}
+
+function setup() {
+	createCanvas(windowWidth, windowHeight);
+	setupMatter();
+
+	planeX = width;
+	slingPoint = {
+		x: width / 2,
+		y: height - 200
+	};
+
+
+
+
+	//birds 
+	movingObjs = [{
+			img: bird1,
+			x: 100,
+			y: 100,
+			dir: 1,
+			speed: 0.5,
+			scale: 0.2
+		},
+		{
+			img: bird,
+			x: 300,
+			y: 150,
+			dir: -1,
+			speed: 0.3,
+			scale: 0.18
+		},
+		{
+			img: satellite,
+			x: 1200,
+			y: 130,
+			dir: 1,
+			speed: 0.25,
+			scale: 0.3
+		}
+
+		//add more if u want
+	];
+}
+// ---- 
+
+
+
+function draw() {
+	background(220);
+	image(bg, 0, -5, width, height);
+
+
+
+
+
+	Engine.update(engine);
+
+	// Moving objects
+	for (let obj of movingObjs) {
+		obj.x += obj.speed * obj.dir;
+		if (obj.x < -100 || obj.x > width + 100) obj.dir *= -1;
+		image(obj.img, obj.x, obj.y, obj.img.width * obj.scale, obj.img.height * obj.scale);
+	}
+
+	// Plane
+	if (!planeHit) {
+		planeX -= 35; // plane speed
+		if (planeX < -plane.width * 0.4) {
+			planeX = width;
+			planeY = 60;
+		}
+	} else {
+		planeY += 35;
+		if (planeY > height + 100) {
+			planeHit = false;
+			planeX = width;
+			planeY = 60;
+		}
+	}
+	image(plane, planeX, planeY, plane.width * 0.4, plane.height * 0.4);
+
+	// Slingshot band
+	if (isDragging && launchPos) {
+		stroke(70, 40, 20);
+		strokeWeight(6);
+		line(slingPoint.x, slingPoint.y, launchPos.x, launchPos.y);
+
+	}
+
+
+
+
+	// Frizzle
+	image(frizzleImg, slingPoint.x - frizzleImg.width * fScale / 2,
+		slingPoint.y - frizzleImg.height * fScale / 35, // the height
+
+
+		frizzleImg.width * fScale, frizzleImg.height * fScale);
+
+
+
+	// Rocks and collision check
+	for (let i = rocks.length - 1; i >= 0; i--) {
+		let rock = rocks[i];
+		rock.show();
+
+		// Check plane collision
+		if (!planeHit && rock.checkPlaneHit(planeX, planeY, plane.width * 0.4, plane.height * 0.4)) {
+			planeHit = true;
+			dropBars(planeX, planeY);
+		}
+
+		if (rock.isOffScreen()) {
+			removeRock(rock);
+
+			rocks.splice(i, 1);
+		}
+	}
+
+
+
+
+
+
+
+
+	// Show bars
+	for (let i = bars.length - 1; i >= 0; i--) {
+		let bar = bars[i];
+		bar.show();
+		if (bar.isOffScreen()) {
+			World.remove(world, bar.body);
+			bars.splice(i, 1);
+		}
+	}
+}
+
+function dropBars(x, y) {
+	for (let i = 0; i < 3; i++) {
+		let isGold = random() > 0.5;
+		let bar = new Bar(x + random(-20, 20), y, isGold);
+		bars.push(bar);
+	}
+}
