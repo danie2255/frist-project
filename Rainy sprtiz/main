@@ -1,171 +1,779 @@
-//main
-let bg, plane, goldbar, silbar;
-let frizzleImg, rockImg;
-let bird1, bird, satellite;
+const STATE_HOMEPAGE = 0;
 
-let planeX, planeY = 60;
-let planeHit = false;
-let bars = [];
-let movingObjs = [];
+const STATE_TOS = 1;
+
+const STATE_GAMEPAGE = 2;
+
+const STATE_Tutorial = 4;
+
+let currentScreen = STATE_HOMEPAGE;
+
+let gameStarted = false;
+
+let BG, BG2, BG3;
+
+let plane, fizzleImg, rockImg, bird, bird1, satellite, goldbar, silverbar, balloonImg, basketfrizzle;
+
+let satelliteObj;
+
 let rocks = [];
-let fScale = 0.5;
 
-let slingPoint;
+let bars = [];
+
+let movingObjs = [];
+
+let strikes = 3;
+
+let frizzleX, fScale = 1.5;
+
+let slingPoint, launchPos;
+
+let planes = [];
+
 let isDragging = false;
-let launchPos = null;
+
+let balloonX, balloonY = 100, balloonBaseY, balloonAngle = 0,
+
+    balloonSpeed = 2, balloonDir = 1;
+
+let balloonHit = false;
+
+let balloonHitTimer = 0;
+
+let shakeX = 0;
+
+let shakeY = 0;
+
+let score = 0;
+
+let engine, world;
+
+let silbar;
+
+let frizzlebasket;
+
+let basketX = 800;
 
 function preload() {
-	bg = loadImage('bg.jpg');
-	plane = loadImage('airplane.png');
-	frizzleImg = loadImage('slingshot.png');
-	rockImg = loadImage('rock (2).png');
-	bird1 = loadImage('bird.png');
-	bird = loadImage('bird2.png');
-	satellite = loadImage('satellite.png');
-	goldbar = loadImage('goldbar.png');
-	silbar = loadImage('silverbar.png');
+
+    BG = loadImage("Homepage.png");
+
+    BG2 = loadImage("Tutorial (5).png");
+
+    BG3 = loadImage("bg for rainy spritz.jpg");
+
+    plane = loadImage("airplane.png");
+
+    fizzleImg = loadImage("slingshot and fizzle.png");
+
+    rockImg = loadImage("Ricky.png");
+
+    bird = loadImage("bird.png");
+
+    bird1 = loadImage("bird2.png");
+
+    satellite = loadImage("satellite.png");
+
+    goldbar = loadImage("goldbar.png");
+
+    silverbar = loadImage("silverbar.png");
+
+    silbar = silverbar;
+
+    balloonImg = loadImage("hot air balloon.png");
+
+    basketfrizzle = loadImage('Fizzle with wicker baskest (1).png');
+
+    frizzlebasket = basketfrizzle;
+
 }
 
 function setup() {
-	createCanvas(windowWidth, windowHeight);
-	setupMatter();
 
-	planeX = width;
-	slingPoint = {
-		x: width / 2,
-		y: height - 200
-	};
+    createCanvas(windowWidth, windowHeight);
 
+    textAlign(CENTER, CENTER);
 
+    setupGame();
 
+    frizzleX = width / 2;
 
-	//birds 
-	movingObjs = [{
-			img: bird1,
-			x: 100,
-			y: 100,
-			dir: 1,
-			speed: 0.5,
-			scale: 0.2
-		},
-		{
-			img: bird,
-			x: 300,
-			y: 150,
-			dir: -1,
-			speed: 0.3,
-			scale: 0.18
-		},
-		{
-			img: satellite,
-			x: 1200,
-			y: 130,
-			dir: 1,
-			speed: 0.25,
-			scale: 0.3
-		}
+    basketX = frizzleX;
 
-		//add more if u want
-	];
 }
-// ---- 
 
+function setupGame() {
 
+    engine = Matter.Engine.create();
+
+    world = engine.world;
+
+    let ground = Matter.Bodies.rectangle(width / 2, height + 50, width, 100, { isStatic: true });
+
+    Matter.World.add(world, ground);
+
+    frizzleX = width / 2;
+
+    slingPoint = { x: frizzleX, y: height - 460 };
+
+    balloonX = width / 2;
+
+    balloonBaseY = height * 0.2;
+
+    balloonAngle = 0;
+
+    planes = [
+
+        { x: width, y: 60, hit: false, type: "mixed" },
+
+        { x: width + 300, y: 120, hit: false, type: "gold" },
+
+        { x: width + 600, y: 180, hit: false, type: "silver" }
+
+    ];
+
+    satelliteObj = { x: -100, y: 80, speed: 2.5 };
+
+    balloonX = random(100, width - 100);
+
+    movingObjs = [];
+
+    for (let i = 0; i < 10; i++) {
+
+        let isBird1 = i % 2 === 0;
+
+        let birdImg = isBird1 ? bird1 : bird;
+
+        let dir = isBird1 ? 1 : -1;
+
+        let startX = isBird1 ? random(0, width * 0.4) : random(width * 0.6, width);
+
+        movingObjs.push({
+
+            img: birdImg,
+
+            x: startX,
+
+            y: random(50, height * 0.4),
+
+            dir: dir,
+
+            speed: random(0.5, 1.2),
+
+            scale: random(0.25, 0.35),
+
+            baseY: 0,
+
+            flutterPhase: random(TWO_PI),
+
+            flutterSpeed: random(0.03, 0.07)
+
+        });
+
+    }
+
+}
 
 function draw() {
-	background(220);
-	image(bg, 0, -5, width, height);
 
+    if (!gameStarted) {
 
+        drawHomepageScreen();
 
+    } else if (currentScreen === STATE_HOMEPAGE) {
 
+        drawHomepageScreen();
 
-	Engine.update(engine);
+    } else if (currentScreen === STATE_TOS) {
 
-	// Moving objects
-	for (let obj of movingObjs) {
-		obj.x += obj.speed * obj.dir;
-		if (obj.x < -100 || obj.x > width + 100) obj.dir *= -1;
-		image(obj.img, obj.x, obj.y, obj.img.width * obj.scale, obj.img.height * obj.scale);
-	}
+        drawTosScreen();
 
-	// Plane
-	if (!planeHit) {
-		planeX -= 35; // plane speed
-		if (planeX < -plane.width * 0.4) {
-			planeX = width;
-			planeY = 60;
-		}
-	} else {
-		planeY += 35;
-		if (planeY > height + 100) {
-			planeHit = false;
-			planeX = width;
-			planeY = 60;
-		}
-	}
-	image(plane, planeX, planeY, plane.width * 0.4, plane.height * 0.4);
+    } else if (currentScreen === STATE_GAMEPAGE) {
 
-	// Slingshot band
-	if (isDragging && launchPos) {
-		stroke(70, 40, 20);
-		strokeWeight(6);
-		line(slingPoint.x, slingPoint.y, launchPos.x, launchPos.y);
+        drawGamepageScreen();
 
-	}
+    } else if (currentScreen === STATE_Tutorial) {
 
+        drawTutorialPage();
 
+    }
 
+    // Show strikes (hearts/lives) in top left
 
-	// Frizzle
-	image(frizzleImg, slingPoint.x - frizzleImg.width * fScale / 2,
-		slingPoint.y - frizzleImg.height * fScale / 35, // the height
+    for (let i = 0; i < 3; i++) {
 
+        if (i < strikes) fill(255, 0, 0);
 
-		frizzleImg.width * fScale, frizzleImg.height * fScale);
+        else fill(100);
 
+        ellipse(30 + i * 30, 30, 20);
 
+    }
 
-	// Rocks and collision check
-	for (let i = rocks.length - 1; i >= 0; i--) {
-		let rock = rocks[i];
-		rock.show();
-
-		// Check plane collision
-		if (!planeHit && rock.checkPlaneHit(planeX, planeY, plane.width * 0.4, plane.height * 0.4)) {
-			planeHit = true;
-			dropBars(planeX, planeY);
-		}
-
-		if (rock.isOffScreen()) {
-			removeRock(rock);
-
-			rocks.splice(i, 1);
-		}
-	}
-
-
-
-
-
-
-
-
-	// Show bars
-	for (let i = bars.length - 1; i >= 0; i--) {
-		let bar = bars[i];
-		bar.show();
-		if (bar.isOffScreen()) {
-			World.remove(world, bar.body);
-			bars.splice(i, 1);
-		}
-	}
 }
 
-function dropBars(x, y) {
-	for (let i = 0; i < 3; i++) {
-		let isGold = random() > 0.5;
-		let bar = new Bar(x + random(-20, 20), y, isGold);
-		bars.push(bar);
-	}
+function drawHomepageScreen() {
+
+    background(BG);
+
+    fill('white');
+
+    textSize(45);
+
+    drawButton(width / 2, height / 2 + 100, "Start");
+
+}
+
+function drawTosScreen() {
+
+    background(BG3);
+
+    fill('white');
+
+    textSize(45);
+
+    drawButton(width / 2, height / 2 + 100, "Tutorial");
+
+    drawButton(width / 2, height / 2 + 185, "Skip");
+
+}
+
+function drawTutorialPage() {
+
+    background(BG2);
+
+    fill(255, 255, 255, 180);
+
+    textSize(32);
+
+    drawButton(width / 2, height / 2 + 400, "continue");
+
+}
+
+function drawButton(x, y, label) {
+
+    fill(255);
+
+    rectMode(CENTER);
+
+    rect(x, y, 200, 80, 20);
+
+    fill(0);
+
+    textSize(32);
+
+    text(label, x, y);
+
+}
+
+function mousePressed() {
+
+    if (!gameStarted && currentScreen === STATE_HOMEPAGE) {
+
+        if (isInsideButton(width / 2, height / 2 + 100)) {
+
+            gameStarted = true;
+
+            currentScreen = STATE_TOS;
+
+        }
+
+    } else if (gameStarted) {
+
+        if (currentScreen === STATE_TOS) {
+
+            if (isInsideButton(width / 2, height / 2 + 100)) currentScreen = STATE_Tutorial;
+
+            else if (isInsideButton(width / 2, height / 2 + 185)) currentScreen = STATE_GAMEPAGE;
+
+        } else if (currentScreen === STATE_Tutorial) {
+
+            if (isInsideButton(width / 2, height / 2 + 400)) currentScreen = STATE_GAMEPAGE;
+
+        } else if (currentScreen === STATE_GAMEPAGE) {
+
+            handleGameMousePressed();
+
+        }
+
+    }
+
+}
+
+function mouseDragged() {
+
+    if (currentScreen === STATE_GAMEPAGE) handleGameMouseDragged();
+
+}
+
+function mouseReleased() {
+
+    if (currentScreen === STATE_GAMEPAGE) handleGameMouseReleased();
+
+}
+
+function keyPressed() {
+
+    if (currentScreen === STATE_Tutorial && keyCode === 32) currentScreen = STATE_GAMEPAGE;
+
+}
+
+function isInsideButton(x, y) {
+
+    return mouseX > x - 100 && mouseX < x + 100 && mouseY > y - 40 && mouseY < y + 40;
+
+}
+
+function drawGamepageScreen() {
+
+    background(220);
+
+    image(BG3, 0, 0, width, height);
+
+    moveFizzle();
+
+    // SINGLE SCORE BOARD (top left, big)
+
+    fill(255, 255, 255, 220);
+
+    noStroke();
+
+    rect(120, 60, 220, 90, 40);
+
+    fill(0);
+
+    textSize(40);
+
+    textAlign(LEFT, CENTER);
+
+    text("Score: " + score, 60, 62);
+
+    slingPoint.x = frizzleX;
+
+    Matter.Engine.update(engine);
+
+    // Balloon movement, smaller & reward drop
+
+    balloonAngle += 0.05;
+
+    balloonY = balloonBaseY + sin(balloonAngle) * 10;
+
+    balloonX += balloonSpeed * balloonDir;
+
+    if (balloonX > width - 100 || balloonX < 100) balloonDir *= -1;
+
+    balloonX = constrain(balloonX, 100, width - 100);
+
+    shakeX = shakeY = 0;
+
+    if (balloonHitTimer > 0) {
+
+        shakeX = random(-2, 2);
+
+        shakeY = random(-2, 2);
+
+        balloonHitTimer--;
+
+        if (balloonHitTimer === 0) balloonHit = false;
+
+    }
+
+    let balloonScale = 0.5; // Smaller balloon
+
+    if (balloonImg) image(
+
+        balloonImg, 
+
+        balloonX + shakeX, balloonY + shakeY, 
+
+        balloonImg.width * balloonScale, balloonImg.height * balloonScale
+
+    );
+
+    // Birds
+
+    for (let obj of movingObjs) {
+
+        obj.x += obj.speed * obj.dir;
+
+        obj.flutterPhase += obj.flutterSpeed;
+
+        obj.baseY = 20 * sin(obj.flutterPhase);
+
+        let displayY = obj.y + obj.baseY;
+
+        if (obj.dir === 1 && obj.x > width + 100) obj.x = -100;
+
+        if (obj.dir === -1 && obj.x < -100) obj.x = width + 100;
+
+        if (obj.img) image(obj.img, obj.x, displayY, obj.img.width * obj.scale, obj.img.height * obj.scale);
+
+    }
+
+    // Satellite
+
+    satelliteObj.x += satelliteObj.speed;
+
+    if (satelliteObj.x > width + 100) satelliteObj.x = -100;
+
+    if (satellite) image(satellite, satelliteObj.x, satelliteObj.y, satellite.width * 0.5, satellite.height * 0.5);
+
+    // Planes - make them smaller
+
+    let planeScale = 0.35;
+
+    for (let planeObj of planes) {
+
+        if (!planeObj.hit) {
+
+            planeObj.x -= 3;
+
+            if (planeObj.x < -plane.width * planeScale) {
+
+                planeObj.x = width + random(200, 500);
+
+                planeObj.hit = false;
+
+            }
+
+        } else {
+
+            planeObj.y += 35;
+
+            if (planeObj.y > height + 100) {
+
+                planeObj.x = width + random(200, 500);
+
+                planeObj.y = random(60, 200);
+
+                planeObj.hit = false;
+
+            }
+
+        }
+
+        if (plane) image(plane, planeObj.x, planeObj.y, plane.width * planeScale, plane.height * planeScale);
+
+    }
+
+    // Slingshot rubber
+
+    if (isDragging && launchPos) {
+
+        stroke(70, 40, 20);
+
+        strokeWeight(2);
+
+        line(slingPoint.x, slingPoint.y, launchPos.x, launchPos.y);
+
+        noStroke();
+
+    }
+
+    if (fizzleImg) image(fizzleImg,
+
+        slingPoint.x - fizzleImg.width * fScale / 2,
+
+        slingPoint.y - fizzleImg.height * fScale / 35,
+
+        fizzleImg.width * fScale, fizzleImg.height * fScale);
+
+    // Rocks
+
+    for (let i = rocks.length - 1; i >= 0; i--) {
+
+        let rock = rocks[i];
+
+        if (rock && rockImg) rock.show(rockImg);
+
+        // Planes collision
+
+        for (let planeObj of planes) {
+
+            if (!planeObj.hit && rock.checkPlaneHit(planeObj.x, planeObj.y, plane.width * planeScale, plane.height * planeScale)) {
+
+                planeObj.hit = true;
+
+                dropBars(planeObj.x, planeObj.y, planeObj.type);
+
+            }
+
+        }
+
+        // Balloon reward drop
+
+        if (balloonImg) {
+
+            let bw = balloonImg.width * balloonScale;
+
+            let bh = balloonImg.height * balloonScale;
+
+            if (
+
+                rock.body.position.x > balloonX &&
+
+                rock.body.position.x < balloonX + bw &&
+
+                rock.body.position.y > balloonY &&
+
+                rock.body.position.y < balloonY + bh
+
+            ) {
+
+                balloonHitTimer = 15;
+
+                // Drop 2-4 bars, mixed/silver
+
+                for (let j = 0; j < int(random(2, 5)); j++) {
+
+                    let t = random() < 0.5 ? "mixed" : "silver";
+
+                    bars.push(new Bar(balloonX + bw / 2 + random(-20, 20), balloonY + bh + 10, t));
+
+                }
+
+                Matter.World.remove(world, rock.body);
+
+                rocks.splice(i, 1);
+
+                continue;
+
+            }
+
+        }
+
+        if (rock.isOffScreen()) {
+
+            Matter.World.remove(world, rock.body);
+
+            rocks.splice(i, 1);
+
+        }
+
+    }
+
+    // Bars & scoring
+
+    for (let i = bars.length - 1; i >= 0; i--) {
+
+        let bar = bars[i];
+
+        let pos = bar.body.position;
+
+        push();
+
+        translate(pos.x, pos.y);
+
+        rotate(bar.body.angle);
+
+        if (bar.isGold && goldbar) image(goldbar, -20, -10, 40, 20);
+
+        else if (silbar) image(silbar, -20, -10, 40, 20);
+
+        pop();
+
+        if (dist(pos.x, pos.y, basketX + 50, height - 50) < 50) {
+
+            if (bar.isGold) score += 10;
+
+            else if (bar.type === "silver") score += 5;
+
+            else score += 15;
+
+            Matter.World.remove(world, bar.body);
+
+            bars.splice(i, 1);
+
+        }
+
+    }
+
+    // Move basket toward nearest bar
+
+    let closestBar = null, minDist = Infinity;
+
+    for (let bar of bars) {
+
+        let d = dist(basketX, height - 50, bar.body.position.x, bar.body.position.y);
+
+        if (d < minDist) {
+
+            minDist = d;
+
+            closestBar = bar;
+
+        }
+
+    }
+
+    if (closestBar) basketX += (closestBar.body.position.x > basketX) ? 5 : -5;
+
+    else basketX = frizzleX;
+
+    basketX = constrain(basketX, 0, width - 100);
+
+    if (frizzlebasket) image(frizzlebasket, basketX, height - 180, 160, 160);
+
+}
+
+function handleGameMousePressed() {
+
+    if (dist(mouseX, mouseY, slingPoint.x, slingPoint.y) < 80) {
+
+        isDragging = true;
+
+        launchPos = { x: mouseX, y: mouseY };
+
+    }
+
+}
+
+function handleGameMouseDragged() {
+
+    if (isDragging) launchPos = { x: mouseX, y: mouseY };
+
+}
+
+function handleGameMouseReleased() {
+
+    if (isDragging) {
+
+        let dx = slingPoint.x - launchPos.x;
+
+        let dy = slingPoint.y - launchPos.y;
+
+        let rock = new Rock(slingPoint.x, slingPoint.y, dx * 0.15, dy * 0.15);
+
+        rocks.push(rock);
+
+        isDragging = false;
+
+        launchPos = null;
+
+    }
+
+}
+
+function moveFizzle() {
+
+    if (keyIsDown(LEFT_ARROW)) frizzleX -= 5;
+
+    if (keyIsDown(RIGHT_ARROW)) frizzleX += 5;
+
+    frizzleX = constrain(frizzleX, 0, width);
+
+}
+
+// --- Physics Classes ---
+
+class Rock {
+
+    constructor(x, y, vx, vy) {
+
+        this.r = 25;
+
+        this.body = Matter.Bodies.circle(x, y, this.r, {
+
+            restitution: 0.5,
+
+            friction: 0.1,
+
+            density: 0.004
+
+        });
+
+        Matter.Body.setVelocity(this.body, { x: vx, y: vy });
+
+        Matter.World.add(world, this.body);
+
+    }
+
+    show(img) {
+
+        let pos = this.body.position;
+
+        push();
+
+        translate(pos.x, pos.y);
+
+        rotate(this.body.angle);
+
+        imageMode(CENTER);
+
+        image(img, 0, 0, this.r * 2, this.r * 2);
+
+        pop();
+
+    }
+
+    checkPlaneHit(px, py, pw, ph) {
+
+        let pos = this.body.position;
+
+        return pos.x > px && pos.x < px + pw && pos.y > py && pos.y < py + ph;
+
+    }
+
+    isOffScreen() {
+
+        let pos = this.body.position;
+
+        return pos.y > height + 100 || pos.x < -100 || pos.x > width + 100;
+
+    }
+
+}
+
+class Bar {
+
+    constructor(x, y, type) {
+
+        this.type = type;
+
+        this.isGold = (type === "gold");
+
+        this.r = 20;
+
+        this.body = Matter.Bodies.circle(x, y, this.r, { restitution: 0.6 });
+
+        Matter.World.add(world, this.body);
+
+        this.img = this.isGold ? goldbar : silverbar;
+
+    }
+
+    show() {
+
+        let pos = this.body.position;
+
+        push();
+
+        translate(pos.x, pos.y);
+
+        rotate(this.body.angle);
+
+        imageMode(CENTER);
+
+        image(this.img, 0, 0, this.r * 2, this.r * 2);
+
+        pop();
+
+    }
+
+    isOffScreen() {
+
+        return this.body.position.y > height + 100;
+
+    }
+
+}
+
+function dropBars(x, y, type = "mixed") {
+
+    for (let i = 0; i < 4; i++) {
+
+        bars.push(new Bar(x + random(-50, 50), y + random(-20, 20), type));
+
+    }
+
 }
